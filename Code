@@ -1,0 +1,99 @@
+import random
+from google.colab import output
+
+# --- ANSI Color Codes ---
+RESET = "\033[0m"
+CYAN  = "\033[1;36m"  # Player X
+GOLD  = "\033[1;33m"  # Player O
+GRAY  = "\033[90m"    # Grid lines
+GREEN = "\033[1;32m"  # Success
+RED   = "\033[1;31m"  # Errors
+WHITE = "\033[1;37m"  # Scoreboard
+
+scores = {"X": 0, "O": 0, "Draws": 0}
+
+def print_board(board):
+    colored_board = [f"{CYAN}X{RESET}" if s == "X" else f"{GOLD}O{RESET}" if s == "O" else " " for s in board]
+    print(f"\n{WHITE}       SCOREBOARD")
+    print(f"   X: {scores['X']} | O: {scores['O']} | Draws: {scores['Draws']}{RESET}")
+    print(f"{GRAY}      |     |     {RESET}")
+    print(f"   {colored_board[0]}  {GRAY}|{RESET}  {colored_board[1]}  {GRAY}|{RESET}  {colored_board[2]}  ")
+    print(f"{GRAY} _____|_____|_____{RESET}")
+    print(f"{GRAY}      |     |     {RESET}")
+    print(f"   {colored_board[3]}  {GRAY}|{RESET}  {colored_board[4]}  {GRAY}|{RESET}  {colored_board[5]}  ")
+    print(f"{GRAY} _____|_____|_____{RESET}")
+    print(f"{GRAY}      |     |     {RESET}")
+    print(f"   {colored_board[6]}  {GRAY}|{RESET}  {colored_board[7]}  {GRAY}|{RESET}  {colored_board[8]}  ")
+    print(f"{GRAY}      |     |     {RESET}\n")
+
+def check_win(board, player):
+    win_conds = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+    return any(all(board[i] == player for i in c) for c in win_conds)
+
+def get_player_move(board):
+    while True:
+        try:
+            val = input(f"Choose your spot {CYAN}(1-9){RESET}: ")
+            move = int(val) - 1
+            if 0 <= move <= 8 and board[move] == " ": return move
+            print(f"{RED}Invalid move. Spot taken or out of range.{RESET}")
+        except ValueError:
+            print(f"{RED}Please enter a valid number.{RESET}")
+
+def get_smart_computer_move(board):
+    """Computer logic: 1. Win, 2. Block, 3. Center, 4. Random"""
+    win_conds = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+
+    # 1. Check if Computer (O) can win
+    for c in win_conds:
+        line = [board[c[0]], board[c[1]], board[c[2]]]
+        if line.count("O") == 2 and line.count(" ") == 1:
+            return c[line.index(" ")]
+
+    # 2. Check if Player (X) needs to be blocked
+    for c in win_conds:
+        line = [board[c[0]], board[c[1]], board[c[2]]]
+        if line.count("X") == 2 and line.count(" ") == 1:
+            return c[line.index(" ")]
+
+    # 3. Take the center if available
+    if board[4] == " ": return 4
+
+    # 4. Pick random from remaining
+    return random.choice([i for i, s in enumerate(board) if s == " "])
+
+def play_round():
+    output.clear()
+    mode = input(f"{WHITE}Select Mode: (1) Player vs Player (2) Player vs Smart AI: {RESET}")
+    board, current_player = [" "] * 9, "X"
+
+    while True:
+        output.clear()
+        print_board(board)
+        if mode == "2" and current_player == "O":
+            move = get_smart_computer_move(board)
+        else:
+            print(f"Current Turn: {CYAN if current_player == 'X' else GOLD}{current_player}{RESET}")
+            move = get_player_move(board)
+
+        board[move] = current_player
+        if check_win(board, current_player):
+            output.clear(); print_board(board)
+            print(f"{GREEN}★ PLAYER {current_player} WINS! ★{RESET}\n")
+            scores[current_player] += 1
+            break
+        if " " not in board:
+            output.clear(); print_board(board)
+            print(f"{GOLD}It's a Tie!{RESET}\n"); scores["Draws"] += 1
+            break
+        current_player = "O" if current_player == "X" else "X"
+
+def main():
+    while True:
+        play_round()
+        if input(f"{WHITE}Play another round? (y/n): {RESET}").lower() != 'y':
+            break
+    print(f"\n{GREEN}Thanks for playing! Final Score - X: {scores['X']} | O: {scores['O']}{RESET}")
+
+if __name__ == "__main__":
+    main()
